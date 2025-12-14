@@ -43,11 +43,71 @@ pool.connect()
     console.error('🔴 Database connection failed:', err.message);
   });
 
+// ✅ TỰ ĐỘNG TẠO TABLE NẾUU CHƯA CÓ
+async function initializeDatabase() {
+  try {
+    console.log('📋 Initializing database...');
+    
+    // Xóa table cũ nếu có (để tránh conflict với cột sai)
+    await pool.query('DROP TABLE IF EXISTS todos CASCADE');
+    console.log('🗑️ Dropped old todos table (if exists)');
+    
+    // Tạo table mới với đúng cột
+    await pool.query(`
+      CREATE TABLE todos (
+        todo_id SERIAL PRIMARY KEY,
+        description TEXT NOT NULL,
+        completed BOOLEAN DEFAULT FALSE,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      )
+    `);
+    console.log('✅ Table todos created successfully!');
+  } catch (err) {
+    console.error('❌ Database initialization error:', err.message);
+  }
+}
+
+// Chạy initialization khi server start
+initializeDatabase();
+
 // 3. CÁC API
 
 // Test server
 app.get('/', (req, res) => {
   res.json({ message: "Backend Project 3 đang chạy ngon lành!" });
+});
+
+// ✅ Endpoint để kiểm tra database
+app.get('/api/test-db', async (req, res) => {
+  try {
+    console.log('Testing database connection...');
+    const result = await pool.query('SELECT NOW()');
+    console.log('✅ Database OK:', result.rows);
+    
+    // Kiểm tra table todos
+    const tables = await pool.query(`
+      SELECT table_name FROM information_schema.tables 
+      WHERE table_schema = 'public'
+    `);
+    console.log('📋 Tables:', tables.rows);
+    
+    // Kiểm tra columns của todos table
+    const columns = await pool.query(`
+      SELECT column_name, data_type FROM information_schema.columns 
+      WHERE table_name = 'todos'
+    `);
+    console.log('📊 Columns in todos:', columns.rows);
+    
+    res.json({
+      status: 'OK',
+      database: 'Connected',
+      tables: tables.rows,
+      todos_columns: columns.rows
+    });
+  } catch (err) {
+    console.error('❌ Database test error:', err.message);
+    res.status(500).json({ error: err.message });
+  }
 });
 
 // Lấy danh sách (GET)
