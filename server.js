@@ -6,9 +6,8 @@ require('dotenv').config();
 const app = express();
 const port = process.env.PORT || 5000;
 
-// 1. CẤU HÌNH CORS (MỞ CỬA CHO VERCEL)
+// ✅ CORS PHẢI ĐƯỢC ĐẶT ĐẦU TIÊN - TRƯỚC TẤT CẢ ROUTES
 app.use(cors());
-app.use(express.json());
 
 // Thêm headers CORS manual
 app.use((req, res, next) => {
@@ -22,10 +21,12 @@ app.use((req, res, next) => {
     next();
 });
 
+app.use(express.json());
+
 // 2. KẾT NỐI DATABASE (Render Postgres)
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
-  ssl: { rejectUnauthorized: false } // Bắt buộc cho Render
+  ssl: { rejectUnauthorized: false }
 });
 
 // 3. CÁC API
