@@ -7,12 +7,26 @@ const app = express();
 const port = process.env.PORT || 5000;
 
 // 1. CẤU HÌNH CORS (MỞ CỬA CHO VERCEL)
-app.use(cors({
-    origin: '*', // Cho phép tất cả các nguồn (Vercel, Localhost...)
-    methods: ['GET', 'POST', 'DELETE', 'PUT', 'PATCH'],
-    allowedHeaders: ['Content-Type', 'Authorization']
-}));
+const corsOptions = {
+    origin: function(origin, callback) {
+        const allowedOrigins = [
+            'https://project3forntendvercel.vercel.app',
+            'http://localhost:3000',
+            'http://localhost:5173'
+        ];
+        
+        if (!origin || allowedOrigins.indexOf(origin) !== -1) {
+            callback(null, true);
+        } else {
+            callback(new Error('Not allowed by CORS'));
+        }
+    },
+    methods: ['GET', 'POST', 'DELETE', 'PUT', 'PATCH', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization'],
+    credentials: true
+};
 
+app.use(cors(corsOptions));
 app.use(express.json());
 
 // 2. KẾT NỐI DATABASE (Render Postgres)
