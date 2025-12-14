@@ -7,9 +7,13 @@ const app = express();
 const port = process.env.PORT || 5000;
 
 // 1. MỞ CỔNG (QUAN TRỌNG NHẤT PROJECT 3)
-app.use(cors()); 
-app.use(express.json());
+app.use(cors({
+    origin: '*', // Cho phép tất cả các tên miền truy cập (Vercel, Localhost...)
+    methods: ['GET', 'POST', 'DELETE', 'PUT', 'PATCH'], // Cho phép các hành động này
+    allowedHeaders: ['Content-Type', 'Authorization'] // Cho phép header
+}));
 
+app.use(express.json());
 // 2. Kết nối Database
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
