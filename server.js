@@ -29,6 +29,20 @@ const pool = new Pool({
   ssl: { rejectUnauthorized: false }
 });
 
+// Test kết nối database
+pool.on('error', (err) => {
+  console.error('🔴 Database connection error:', err);
+});
+
+pool.connect()
+  .then(client => {
+    console.log('✅ Database connected successfully!');
+    client.release();
+  })
+  .catch(err => {
+    console.error('🔴 Database connection failed:', err.message);
+  });
+
 // 3. CÁC API
 
 // Test server
@@ -39,12 +53,13 @@ app.get('/', (req, res) => {
 // Lấy danh sách (GET)
 app.get('/todos', async (req, res) => {
   try {
-    // Sắp xếp theo ID để công việc không bị nhảy lung tung
+    console.log('📡 GET /todos - fetching...');
     const allTodos = await pool.query('SELECT * FROM todos ORDER BY todo_id ASC');
+    console.log('✅ Fetched:', allTodos.rows.length, 'todos');
     res.json(allTodos.rows);
   } catch (err) {
-    console.error(err.message);
-    res.status(500).json({ error: "Lỗi Server" });
+    console.error('❌ GET /todos error:', err.message);
+    res.status(500).json({ error: err.message });
   }
 });
 
@@ -52,15 +67,16 @@ app.get('/todos', async (req, res) => {
 app.post('/todos', async (req, res) => {
   try {
     const { description } = req.body;
-    // Database của bạn có cột 'description' đúng không?
+    console.log('📡 POST /todos - description:', description);
     const newTodo = await pool.query(
       'INSERT INTO todos (description) VALUES($1) RETURNING *',
       [description]
     );
+    console.log('✅ Created todo:', newTodo.rows[0]);
     res.json(newTodo.rows[0]);
   } catch (err) {
-    console.error(err.message);
-    res.status(500).json({ error: "Lỗi thêm task" });
+    console.error('❌ POST /todos error:', err.message);
+    res.status(500).json({ error: err.message });
   }
 });
 
