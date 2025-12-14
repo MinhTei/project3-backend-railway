@@ -106,6 +106,6 @@ app.delete('/todos/:id', async (req, res) => {
 });
 
 // Chạy server
-app.listen(port, () => {
+app.listen(port, '0.0.0.0', () => {
   console.log(`Backend đang chạy tại cổng ${port}`);
 });
