@@ -49,23 +49,23 @@ async function initializeDatabase() {
   try {
     console.log('📋 Initializing database...');
     
-    // Bước 1: Kiểm tra table todos
+    // Bước 1: Kiểm tra table todos_backend3
     const checkTable = await client.query(`
       SELECT EXISTS (
         SELECT FROM information_schema.tables 
         WHERE table_schema = 'public' 
-        AND table_name = 'todos'
+        AND table_name = 'todos_backend3'
       )
     `);
     
     const tableExists = checkTable.rows[0].exists;
-    console.log('📊 Table todos exists?', tableExists);
+    console.log('📊 Table todos_backend3 exists?', tableExists);
     
     if (tableExists) {
       console.log('🔍 Checking table structure...');
       const columns = await client.query(`
         SELECT column_name FROM information_schema.columns 
-        WHERE table_name = 'todos'
+        WHERE table_name = 'todos_backend3'
         ORDER BY ordinal_position
       `);
       
@@ -80,12 +80,12 @@ async function initializeDatabase() {
         // Xóa tất cả constraints trước
         await client.query(`
           DO $$ BEGIN
-            ALTER TABLE todos DROP CONSTRAINT IF EXISTS todos_pkey CASCADE;
+            ALTER TABLE todos_backend3 DROP CONSTRAINT IF EXISTS todos_backend3_pkey CASCADE;
           EXCEPTION WHEN OTHERS THEN NULL;
           END $$;
         `);
         
-        await client.query('DROP TABLE IF EXISTS todos CASCADE');
+        await client.query('DROP TABLE IF EXISTS todos_backend3 CASCADE');
         console.log('✅ Old table dropped');
       } else {
         console.log('✅ Table structure is correct, skipping creation');
@@ -95,21 +95,21 @@ async function initializeDatabase() {
     }
     
     // Bước 3: Tạo table mới
-    console.log('🆕 Creating new todos table...');
+    console.log('🆕 Creating new todos_backend3 table...');
     await client.query(`
-      CREATE TABLE todos (
+      CREATE TABLE todos_backend3 (
         todo_id SERIAL PRIMARY KEY,
         description TEXT NOT NULL,
         completed BOOLEAN DEFAULT FALSE,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       )
     `);
-    console.log('✅ Table todos created successfully!');
+    console.log('✅ Table todos_backend3 created successfully!');
     
     // Bước 4: Verify columns
     const finalColumns = await client.query(`
       SELECT column_name FROM information_schema.columns 
-      WHERE table_name = 'todos'
+      WHERE table_name = 'todos_backend3'
       ORDER BY ordinal_position
     `);
     const finalColumnNames = finalColumns.rows.map(c => c.column_name);
@@ -144,25 +144,25 @@ app.get('/api/test-db', async (req, res) => {
     const result = await pool.query('SELECT NOW()');
     console.log('✅ Database OK:', result.rows);
     
-    // Kiểm tra table todos
+    // Kiểm tra table todos_backend3
     const tables = await pool.query(`
       SELECT table_name FROM information_schema.tables 
       WHERE table_schema = 'public'
     `);
     console.log('📋 Tables:', tables.rows);
     
-    // Kiểm tra columns của todos table
+    // Kiểm tra columns của todos_backend3 table
     const columns = await pool.query(`
       SELECT column_name, data_type FROM information_schema.columns 
-      WHERE table_name = 'todos'
+      WHERE table_name = 'todos_backend3'
     `);
-    console.log('📊 Columns in todos:', columns.rows);
+    console.log('📊 Columns in todos_backend3:', columns.rows);
     
     res.json({
       status: 'OK',
       database: 'Connected',
       tables: tables.rows,
-      todos_columns: columns.rows
+      todos_backend3_columns: columns.rows
     });
   } catch (err) {
     console.error('❌ Database test error:', err.message);
@@ -174,7 +174,7 @@ app.get('/api/test-db', async (req, res) => {
 app.get('/todos', async (req, res) => {
   try {
     console.log('📡 GET /todos - fetching...');
-    const allTodos = await pool.query('SELECT * FROM todos ORDER BY todo_id ASC');
+    const allTodos = await pool.query('SELECT * FROM todos_backend3 ORDER BY todo_id ASC');
     console.log('✅ Fetched:', allTodos.rows.length, 'todos');
     res.json(allTodos.rows);
   } catch (err) {
@@ -189,7 +189,7 @@ app.post('/todos', async (req, res) => {
     const { description } = req.body;
     console.log('📡 POST /todos - description:', description);
     const newTodo = await pool.query(
-      'INSERT INTO todos (description) VALUES($1) RETURNING *',
+      'INSERT INTO todos_backend3 (description) VALUES($1) RETURNING *',
       [description]
     );
     console.log('✅ Created todo:', newTodo.rows[0]);
@@ -207,10 +207,10 @@ app.put('/todos/:id', async (req, res) => {
     const { description, completed } = req.body; 
     
     // Cập nhật cả nội dung và trạng thái
-    // Nếu bảng todos của bạn chưa có cột 'completed', lệnh này có thể lỗi. 
+    // Nếu bảng todos_backend3 của bạn chưa có cột 'completed', lệnh này có thể lỗi. 
     // Nhưng cứ để tạm logic này cho chuẩn React.
     const updateTodo = await pool.query(
-      'UPDATE todos SET description = $1, completed = $2 WHERE todo_id = $3',
+      'UPDATE todos_backend3 SET description = $1, completed = $2 WHERE todo_id = $3',
       [description, completed, id]
     );
 
@@ -221,7 +221,7 @@ app.put('/todos/:id', async (req, res) => {
     try {
         const { id } = req.params;
         const { description } = req.body;
-        await pool.query('UPDATE todos SET description = $1 WHERE todo_id = $2', [description, id]);
+        await pool.query('UPDATE todos_backend3 SET description = $1 WHERE todo_id = $2', [description, id]);
         res.json("Đã cập nhật description!");
     } catch(e) {
         res.status(500).json({ error: "Lỗi update" });
@@ -233,7 +233,7 @@ app.put('/todos/:id', async (req, res) => {
 app.delete('/todos/:id', async (req, res) => {
   try {
     const { id } = req.params;
-    const deleteTodo = await pool.query('DELETE FROM todos WHERE todo_id = $1', [id]);
+    const deleteTodo = await pool.query('DELETE FROM todos_backend3 WHERE todo_id = $1', [id]);
     res.json("Đã xóa!");
   } catch (err) {
     console.error(err.message);
