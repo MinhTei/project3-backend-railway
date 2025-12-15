@@ -48,13 +48,28 @@ async function initializeDatabase() {
   try {
     console.log('📋 Initializing database...');
     
-    // Xóa table cũ nếu có (để tránh conflict với cột sai)
-    await pool.query('DROP TABLE IF EXISTS todos CASCADE');
-    console.log('🗑️ Dropped old todos table (if exists)');
+    // Kiểm tra xem table todos đã tồn tại chưa
+    const checkTable = await pool.query(`
+      SELECT EXISTS (
+        SELECT FROM information_schema.tables 
+        WHERE table_schema = 'public' 
+        AND table_name = 'todos'
+      )
+    `);
+    
+    const tableExists = checkTable.rows[0].exists;
+    console.log('📊 Table todos exists?', tableExists);
+    
+    if (tableExists) {
+      console.log('🗑️ Dropping old todos table...');
+      await pool.query('DROP TABLE IF EXISTS todos CASCADE');
+      console.log('✅ Old table dropped');
+    }
     
     // Tạo table mới với đúng cột
+    console.log('🆕 Creating new todos table...');
     await pool.query(`
-      CREATE TABLE todos (
+      CREATE TABLE IF NOT EXISTS todos (
         todo_id SERIAL PRIMARY KEY,
         description TEXT NOT NULL,
         completed BOOLEAN DEFAULT FALSE,
@@ -62,13 +77,26 @@ async function initializeDatabase() {
       )
     `);
     console.log('✅ Table todos created successfully!');
+    
+    // Kiểm tra columns
+    const columns = await pool.query(`
+      SELECT column_name FROM information_schema.columns 
+      WHERE table_name = 'todos'
+    `);
+    console.log('📋 Columns in todos:', columns.rows.map(c => c.column_name).join(', '));
+    
   } catch (err) {
     console.error('❌ Database initialization error:', err.message);
+    console.error('Stack:', err.stack);
   }
 }
 
 // Chạy initialization khi server start
-initializeDatabase();
+initializeDatabase().then(() => {
+  console.log('✅ Database initialization completed!');
+}).catch(err => {
+  console.error('❌ Failed to initialize database:', err);
+});
 
 // 3. CÁC API
 
